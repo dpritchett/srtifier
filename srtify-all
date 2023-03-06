@@ -10,10 +10,9 @@ end
 
 def srt_exists?(filepath)
     srt_path = filepath.to_s + ".srt"
-    log.info "Check for SRT: #{srt_path}"
 
     if File.exists?(srt_path)
-        log.info "Skipping. SRT file already exists at #{srt_path}"
+        log.info "[skip] SRT found for #{Pathname.new(filepath).basename}."
         return true
     end
     false
@@ -22,8 +21,6 @@ end
 # whisper '--language=en' '--model=base.en'
 # '--output_format=srt' ./SelfMasterySoloBJJTrainingDrillsJohnDanaherVol3.mp4.mp4
 def rip_file(filepath)
-    log.info "rip_file: #{filepath}"
-
     fp = Pathname.new(filepath)
     output_dir = fp.dirname.to_s
 
@@ -33,10 +30,11 @@ def rip_file(filepath)
         "\"#{fp.to_s}\""
     ].join(" ")
 
-    log.info "*** RIPPING FILE: #{filepath} ***"
     log.info cmd
 
     system cmd
+
+    log.info "Find new SRT at #{filepath}.srt"
 
     beep
 end
@@ -49,10 +47,12 @@ def main
     videos = Dir.glob "./**/*mp4"
     log.info "Welcome to SRT Generator. Now processing #{videos.count} files."
     keepers = videos.reject { |v| srt_exists? v }
+
     log.info "Skipped #{videos.count - keepers.count} files due to existing SRTs."
+    log.info "Now processing work list of #{keepers.count} videos."
 
     keepers.each_with_index do |infile, ix|
-        log.info "  [#{ix+1}/#{videos.count}]\t #{infile}"
+        log.info "[#{ix+1}/#{keepers.count}] #{infile}"
         rip_file infile
     end
 end
