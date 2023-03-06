@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+
+require 'logger'
+require 'pathname'
+require 'pry'
+
+def log
+    @_log ||= Logger.new(STDOUT)
+end
+
+def srt_exists?(filepath)
+    srt_path = filepath.to_s + ".srt"
+    log.info "Check for SRT: #{srt_path}"
+
+    if File.exists?(srt_path)
+        log.info "Skipping. SRT file already exists at #{srt_path}"
+        return true
+    end
+    false
+end
+
+# whisper '--language=en' '--model=base.en'
+# '--output_format=srt' ./SelfMasterySoloBJJTrainingDrillsJohnDanaherVol3.mp4.mp4
+def rip_file(filepath)
+    log.info "rip_file: #{filepath}"
+
+    fp = Pathname.new(filepath)
+    output_dir = fp.dirname.to_s
+
+    cmd = [
+        "whisper --language=en --model=base.en --output_format=srt",
+        "--output_dir=\"#{output_dir}\"",
+        "\"#{fp.to_s}\""
+    ].join(" ")
+
+    log.info "*** RIPPING FILE: #{filepath} ***"
+    log.info cmd
+
+    system cmd
+
+    beep
+end
+
+def beep
+    system `espeak beep`
+end
+
+def main 
+    videos = Dir.glob "./**/*mp4"
+    log.info "Welcome to SRT Generator. Now processing #{videos.count} files."
+    keepers = videos.reject { |v| srt_exists? v }
+    log.info "Skipped #{videos.count - keepers.count} files due to existing SRTs."
+
+    keepers.each_with_index do |infile, ix|
+        log.info "  [#{ix+1}/#{videos.count}]\t #{infile}"
+        rip_file infile
+    end
+end
+
+main
